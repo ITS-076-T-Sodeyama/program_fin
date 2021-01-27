@@ -1,0 +1,134 @@
+<html>
+  <head>
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="-1" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initital-scale=1" />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+    <script>
+      /* global $ io */
+      $(function () {
+        let room = "room001";
+        let devid = "";
+        //number of decimal places wanted, used with Number.toFixed(x) for Javascrip 1.5+
+        let decPlaces = 2;
+        //interval in millsec for how quickly the measurements get sent
+        let interval = 50; // 20 fps
+        //the event handler for MotionEvent
+        let alpha = 0,
+          beta = 0,
+          gamma = 0;
+
+        let socket = io.connect();
+
+        socket.on("mylogin", function (data) {
+          devid = data;
+          $("#contents").text("接続されました。あなたのIDは：" + devid);
+          $("#content").css("background-color", idToColor(devid));
+        });
+
+        if (!("WebSocket" in window))
+          alert("ブラウザがWebSocketsをサポートしていません");
+
+        $("#connect").on("click", function () {
+          room = $("#room").val();
+          setInterval(function () {
+            socket.emit("sensor", {
+              id: devid,
+              room: room,
+              a: alpha,
+              b: beta,
+              g: gamma,
+              z: z
+            });
+          }, interval);
+          $("#connect").hide();
+          request_permission();
+        });
+
+        function idToColor(str) {
+          let r = (9 * str.substring(0, 1).charCodeAt(0)) % 256;
+          let g = (9 * str.substring(1, 2).charCodeAt(0)) % 256;
+          let b = (9 * str.substring(2, 3).charCodeAt(0)) % 256;
+          return "rgb(" + r + "," + g + "," + b + ")";
+        }
+
+        //let x = 0;
+        //let y = 0;
+        let z = 0;
+        window.ondevicemotion = function (event) {
+          //x = event.accelerationIncludingGravity.x.toFixed(decPlaces);
+          //y = event.accelerationIncludingGravity.y.toFixed(decPlaces);
+          z = event.accelerationIncludingGravity.z.toFixed(decPlaces);
+        };
+
+        //the event handler for OrientationEvent
+        window.ondeviceorientation = function (event) {
+          alpha = event.alpha.toFixed(decPlaces);
+          beta = event.beta.toFixed(decPlaces);
+          gamma = event.gamma.toFixed(decPlaces);
+        };
+
+        function request_permission() {
+          if (
+            DeviceMotionEvent &&
+            DeviceMotionEvent.requestPermission &&
+            typeof DeviceMotionEvent.requestPermission === "function"
+          ) {
+            DeviceMotionEvent.requestPermission();
+          }
+          if (
+            DeviceOrientationEvent &&
+            DeviceOrientationEvent.requestPermission &&
+            typeof DeviceOrientationEvent.requestPermission === "function"
+          ) {
+            DeviceOrientationEvent.requestPermission();
+          }
+        }
+      });
+    </script>
+
+    <style>
+      #label {
+        width: 15%;
+        height: 16px;
+      }
+      #room {
+        width: 25%;
+        height: 18px;
+      }
+      #connect {
+        width: 15%;
+        height: 24px;
+      }
+      #content {
+        background-color: #ccc;
+      }
+      .space {
+        height: 24px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <center>
+      <div id="content">
+        <div class="space"></div>
+        <span id="label">room: </span>
+        <input id="room" type="text" size="10" value="room001" />
+        <input id="connect" type="button" value="接続" />
+        <div class="space"></div>
+        <img src="img/controller.png" width="80%" />
+        <div>
+          <div class="space"></div>
+          <text id="contents" placeholder="デバイスを傾けて下さい"></text>
+        </div>
+      </div>
+      <div id="footer">
+        <h4>スマホセンサー</h4>
+      </div>
+    </center>
+  </body>
+</html>

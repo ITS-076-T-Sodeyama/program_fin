@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>アマビエとあそぼう</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/addons/p5.sound.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+  </head>
+  <style>
+    body {
+      text-align: center;
+    }
+  </style>
+  
+  <body>
+    <body background="img/blue.jpg">
+    <h1>アマビエのおともだちをさがそう！</h1>
+    <div>
+      きみはアマビエといっしょにいるかをさがしているよ！<br>
+      <br>
+      <div>
+        うみのばしょ :<span id="myid"></span><input id="room" type="text" size="10" value="room001" />
+      </div>
+      <br/>
+      <button id="connect" <input type="button" value="色が変わるボタン" style="background-color:#ffff99" onmouseover="this.style.background='#99ccff'" onmouseout="this.style.background='#ffff99'">じゅんびオッケー！</button>
+      <button id="speak" <input type="button" value="色が変わるボタン" style="background-color:＃pink" onmouseover="this.style.background='#99ccff'" onmouseout="this.style.background='#ff99cc'">どうすればいいの？</button>
+      <br /><br />
+      <!-- <div>受信した情報はコンソールログで確認してください</div> -->
+    </div>
+    <div class="class1">
+      <script>
+        //発話機能をインスタンス化
+
+        let msg = new SpeechSynthesisUtterance();
+        let voices = window.speechSynthesis.getVoices();
+
+        function speak(text) {
+          // 以下オプション設定
+          msg.voice = voices[7]; // 7:Google 日本人 ja-JP ※他は英語のみ
+          msg.volume = 0.5; // 音量 min 0 ~ max 1
+          msg.rate = 0; // 速度 min 0 ~ max 10
+          msg.pitch = 2.0; // 音程 min 0 ~ max 2
+
+          msg.text = text; // 喋る内容
+          msg.lang = "ja-JP"; // en-US or ja-JP
+          // msg.lang = 'en-US'; // en-US or ja-JP
+
+          // 発話実行
+          speechSynthesis.speak(msg);
+        }
+
+        // 終了時の処理
+        msg.onend = function (event) {
+          console.log("End: ", text);
+        };
+
+        let text =
+          "このゲームはスマートフォンでアマビエを操作します。お手持ちのスマートフォンからページにログインしてください。";
+
+        let button = document.querySelector("#speak");
+        button.onclick = function () {
+          speak(text);
+        };
+        //game1
+        let socket = io.connect();
+        let myid;
+
+        let room = document.querySelector("#room").value;
+        let btn = document.querySelector("#connect");
+        let b = 0;
+        let g = 0;
+
+        btn.addEventListener("click", function () {
+          socket.emit("join", room);
+          btn.remove();
+        });
+
+        socket.on("mylogin", function (data) {
+          myid = data;
+          document.querySelector("#myid").innerHTML = myid;
+          console.log("あなたのID: ", myid);
+        });
+
+        socket.on("sensor", function (data) {
+          g = parseFloat(data.g);
+          b = parseFloat(data.b);
+          console.log(g);
+        });
+
+        let x = 250;
+        let y = 250;
+        let targetX = 250;
+        let targetY = 250;
+        let speed = 0.02;
+        let bg;
+        let bgm;
+        let bgm2;
+        let score = 0;
+
+        function preload() {
+          ama = loadImage("img/ama.png");
+          iru = loadImage("img/iruka.png");
+          bg = loadImage("img/sea.jpg");
+          bgm = loadSound("img/bell.mp3");
+          bgm2 = loadSound("img/sea.mp3");
+        }
+
+        function setup() {
+          createCanvas(338, 338);
+          image(bg, width / 2, height / 2);
+          imageMode(CENTER);
+          targetX = random(width);
+          targetY = random(height);
+          score = 0;
+        }
+
+        function draw() {
+          //端設定
+          let max = 330;
+          let min = 30;
+
+          if (x > max) {
+            x = max;
+          } else if (x < min) {
+            x = min;
+          }
+          if (y > max) {
+            y = max;
+          } else if (y < min) {
+            y = min;
+          }
+
+          image(bg, width / 2, height / 2); //backgroundの代わり
+          x = x + speed * g;
+          y = y + speed * b;
+          let distance = Math.sqrt(
+            (x - targetX) * (x - targetX) + (y - targetY) * (y - targetY)
+          );
+
+          if (distance < 30) {
+            setup();
+            bgm.play();
+            // background(0)
+            image(ama, x, y, 60, 60);
+          }
+          image(iru, targetX, targetY, 40, 40);
+          image(ama, x, y, 60, 60);
+          // circle(random(width), random(height), 50, 50);
+        }
+        // function Sound(){
+        //   bgm2.loop();
+        // }
+       
+      </script>
+    </div>
+  </body>
+</html>
